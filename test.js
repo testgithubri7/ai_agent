@@ -1,7 +1,7 @@
-const { GoogleGenAI } = require("@google/genai");
+const searchDocumentsTool =
+require("./tools/searchDocumentsTool");
 
-const ai = new GoogleGenAI({
-    apiKey: "dummy"
-});
+const result =
+searchDocumentsTool();
 
-console.log(ai);
+console.log(result);

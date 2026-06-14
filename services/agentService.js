@@ -60,7 +60,24 @@ const toolsConfig = [
 
                     required: ["weight"]
                 }
+            },
+          {
+    name: "searchDocumentsTool",
+    description: "Search company documents and policies based on a user query",
+
+    parameters: {
+        type: "OBJECT",
+
+        properties: {
+            query: {
+                type: "STRING",
+                description: "User question to search in company documents"
             }
+        },
+
+        required: ["query"]
+    }
+}
         ]
     }
 ];
@@ -77,6 +94,10 @@ async function runAgent(userMessage) {
             ]
         }
     ];
+
+    //as the call happens as many times as tools are called no
+    //need to add seperately the natural language response and the tool calls as they are all part of the same conversation and will be processed in order
+    //the last call give the response naturally
 
     while (true) {
 
@@ -139,6 +160,13 @@ async function runAgent(userMessage) {
                 functionCallPart.functionCall.args.weight;
 
         }
+        else if (toolName === "searchDocumentsTool") {
+           
+             toolArgs =
+        functionCallPart.functionCall.args.query;
+        }
+
+        console.log("Tool Args:", toolArgs);
 
         const toolResult =
             await executeTool(
