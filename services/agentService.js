@@ -61,23 +61,37 @@ const toolsConfig = [
                     required: ["weight"]
                 }
             },
-          {
-    name: "searchDocumentsTool",
-    description: "Search company documents and policies based on a user query",
+         {
+    name: "searchDocumentsVectorTool",
+
+    description:
+        "Search company documents using semantic search. Optionally search only a specific document.",
 
     parameters: {
+
         type: "OBJECT",
 
         properties: {
+
             query: {
                 type: "STRING",
-                description: "User question to search in company documents"
+                description:
+                    "User question"
+            },
+
+            source: {
+                type: "STRING",
+                description:
+                    "Optional document name. Example: handbook.txt, benefits.txt, company.txt"
             }
+
         },
 
         required: ["query"]
+
     }
 }
+
         ]
     }
 ];
@@ -160,10 +174,23 @@ async function runAgent(userMessage) {
                 functionCallPart.functionCall.args.weight;
 
         }
-        else if (toolName === "searchDocumentsTool") {
+        else if (toolName === "searchDocumentsVectorTool") {
            
-             toolArgs =
-        functionCallPart.functionCall.args.query;
+             toolArgs = {
+
+        query:
+            functionCallPart
+                .functionCall
+                .args
+                .query,
+
+        source:
+            functionCallPart
+                .functionCall
+                .args
+                .source
+
+    };
         }
 
         console.log("Tool Args:", toolArgs);

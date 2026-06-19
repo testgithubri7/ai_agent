@@ -27,8 +27,15 @@ async function searchDocumentsVectorTool(query) {
             );
 
         results.push({
-            chunk: item.chunk,
+
+            source:
+                item.source,
+
+            chunk:
+                item.chunk,
+
             score
+
         });
 
     }
@@ -44,17 +51,24 @@ async function searchDocumentsVectorTool(query) {
 
     console.log(results);
 
-    const topChunks =
-        results
-            .slice(0, 3)
-            .map(
-                item =>
-                    item.chunk
-            );
+    const topResults =
+        results.slice(0, 3);
 
-    return topChunks.join(
-        "\n\n"
+    console.log(
+        "\nTop Sources:"
     );
+
+    console.log(
+        topResults.map(
+            item => item.source
+        )
+    );
+
+    return topResults
+        .map(item =>
+            `[Source: ${item.source}]\n${item.chunk}`
+        )
+        .join("\n\n");
 }
 
 module.exports =
