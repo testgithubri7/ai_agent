@@ -1,66 +1,53 @@
 const getEmbedding =
     require("../services/embeddingService");
 
-const cosineSimilarity =
-    require("../services/cosineSimilarity");
+const searchFaiss =
+    require("../services/faissService");
 
 const {
     getVectorStore
 } = require("../services/vectorStore");
 
 async function searchDocumentsVectorTool(args)
- {
-
+{
     const query =
         args.query;
 
     const source =
         args.source || null;
-        
+
     const queryEmbedding =
         await getEmbedding(query);
 
     const vectorStore =
         getVectorStore();
 
-    const stopWords = [
+    const faissResults =
+        await searchFaiss(
+            queryEmbedding
+        );
 
-        "how",
-        "many",
-        "what",
-        "is",
-        "are",
-        "the",
-        "a",
-        "an",
-        "do",
-        "does",
-        "get",
-        "can",
-        "i",
-        "we",
-        "you",
-        "of",
-        "to",
-        "in"
+    console.log(
+        "FAISS Results:"
+    );
 
-    ];
-
-    const keywords =
-        query
-            .toLowerCase()
-            .split(" ")
-            .filter(
-                word =>
-                    !stopWords.includes(word)
-            );
-
-    console.log("Keywords:");
-    console.log(keywords);
+    console.log(
+        faissResults
+    );
 
     const results = [];
 
-    for (const item of vectorStore) {
+    for (
+        let i = 0;
+        i < faissResults.indices.length;
+        i++
+    ) {
+
+        const index =
+            faissResults.indices[i];
+
+        const item =
+            vectorStore[index];
 
         if (
             source &&
@@ -68,29 +55,6 @@ async function searchDocumentsVectorTool(args)
         ) {
             continue;
         }
-
-        const score =
-            cosineSimilarity(
-                queryEmbedding,
-                item.embedding
-            );
-
-        let keywordScore = 0;
-
-        for (const keyword of keywords) {
-
-            if (
-                item.chunk
-                    .toLowerCase()
-                    .includes(keyword)
-            ) {
-                keywordScore++;
-            }
-        }
-
-        const finalScore =
-            score +
-            (keywordScore * 0.1);
 
         results.push({
 
@@ -100,34 +64,21 @@ async function searchDocumentsVectorTool(args)
             chunk:
                 item.chunk,
 
-            score,
-
-            keywordScore,
-
-            finalScore
+            distance:
+                faissResults.distances[i]
 
         });
 
     }
 
-    results.sort(
-        (a, b) =>
-            b.finalScore - a.finalScore
-    );
-
     console.log(
-        "Ranked Results:"
+        "Retrieved Results:"
     );
 
     console.log(results);
 
     const topResults =
-        results
-            .filter(
-                item =>
-                    item.finalScore >= 0.60
-            )
-            .slice(0, 3);
+        results.slice(0, 3);
 
     console.log(
         "\nTop Sources:"
