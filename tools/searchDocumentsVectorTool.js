@@ -1,8 +1,5 @@
-const getEmbedding =
-    require("../services/embeddingService");
-
-const searchFaiss =
-    require("../services/faissService");
+const multiQueryRetriever =
+    require("../services/multiQueryRetriever");
 
 const {
     getVectorStore
@@ -16,38 +13,72 @@ async function searchDocumentsVectorTool(args)
     const source =
         args.source || null;
 
-    const queryEmbedding =
-        await getEmbedding(query);
-
     const vectorStore =
         getVectorStore();
 
-    const faissResults =
-        await searchFaiss(
-            queryEmbedding
+    const stopWords = [
+
+        "how",
+        "many",
+        "what",
+        "is",
+        "are",
+        "the",
+        "a",
+        "an",
+        "do",
+        "does",
+        "get",
+        "can",
+        "i",
+        "we",
+        "you",
+        "of",
+        "to",
+        "in"
+
+    ];
+
+    const keywords =
+        query
+            .toLowerCase()
+            .split(" ")
+            .filter(
+                word =>
+                    !stopWords.includes(word)
+            );
+
+    console.log("Keywords:");
+    console.log(keywords);
+
+    // -------------------------------
+    // Multi Query Retrieval
+    // -------------------------------
+
+    const retrievalResults =
+        await multiQueryRetriever(
+            query
         );
 
     console.log(
-        "FAISS Results:"
+        "Multi Query Results:"
     );
 
     console.log(
-        faissResults
+        retrievalResults
     );
 
     const results = [];
 
     for (
-        let i = 0;
-        i < faissResults.indices.length;
-        i++
+        const result
+        of retrievalResults
     ) {
 
-        const index =
-            faissResults.indices[i];
-
         const item =
-            vectorStore[index];
+            vectorStore[
+                result.index
+            ];
 
         if (
             source &&
@@ -55,6 +86,36 @@ async function searchDocumentsVectorTool(args)
         ) {
             continue;
         }
+
+        const distance =
+            result.distance;
+
+        // Convert FAISS distance into similarity score
+        const semanticScore =
+            1 / (1 + distance);
+
+        let keywordScore = 0;
+
+        for (
+            const keyword
+            of keywords
+        ) {
+
+            if (
+                item.chunk
+                    .toLowerCase()
+                    .includes(keyword)
+            ) {
+
+                keywordScore++;
+
+            }
+
+        }
+
+        const finalScore =
+            semanticScore +
+            (keywordScore * 0.2);
 
         results.push({
 
@@ -64,18 +125,34 @@ async function searchDocumentsVectorTool(args)
             chunk:
                 item.chunk,
 
-            distance:
-                faissResults.distances[i]
+            distance,
+
+            semanticScore,
+
+            keywordScore,
+
+            finalScore
 
         });
 
     }
 
-    console.log(
-        "Retrieved Results:"
+    results.sort(
+
+        (a, b) =>
+
+            b.finalScore -
+            a.finalScore
+
     );
 
-    console.log(results);
+    console.log(
+        "\nHybrid Ranked Results:"
+    );
+
+    console.log(
+        results
+    );
 
     const topResults =
         results.slice(0, 3);
@@ -85,17 +162,27 @@ async function searchDocumentsVectorTool(args)
     );
 
     console.log(
+
         topResults.map(
+
             item => item.source
+
         )
+
     );
 
     return topResults
+
         .map(
+
             item =>
+
                 `[Source: ${item.source}]\n${item.chunk}`
+
         )
+
         .join("\n\n");
+
 }
 
 module.exports =

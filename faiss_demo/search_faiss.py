@@ -28,10 +28,10 @@ query_embedding = np.array(
     dtype=np.float32
 )
 
-# Search top 3 results
+# Search top 10 results
 distances, indices = index.search(
     query_embedding,
-    3
+    10
 )
 
 # Return JSON
